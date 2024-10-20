@@ -41,13 +41,9 @@ def hitung_metrik(y_true, y_pred):
     return sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi
 
 # 3. Fungsi untuk visualisasi ROC dan menghitung AUC untuk satu dataset
-def plot_roc_curve(y_true, y_pred_prob, label):
-    # Memastikan target hanya dua kelas (klasifikasi biner)
-    if len(set(y_true)) != 2:
-        st.error(f"Target dataset {label} bukan biner. ROC Curve hanya bisa dihitung untuk klasifikasi biner.")
-        return None
-
-    fpr, tpr, _ = roc_curve(y_true, y_pred_prob)
+def plot_roc_curve(y_true, y_pred_prob, pos_label, label):
+    # Menghitung ROC curve dengan label positif yang ditentukan user
+    fpr, tpr, _ = roc_curve(y_true, y_pred_prob, pos_label=pos_label)
     auc_value = roc_auc_score(y_true, y_pred_prob)
 
     plt.plot(fpr, tpr, label=f'{label} (AUC = {auc_value:.2f})')
@@ -68,7 +64,7 @@ def interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, aku
         st.write(f"AUC: {auc_value:.2f} - Area under the curve untuk {label}.")
 
 # 5. Fungsi utama untuk menjalankan pipeline analisis untuk satu dataset
-def run_evaluation_pipeline(df, target_col, label):
+def run_evaluation_pipeline(df, target_col, pos_label, label):
     # Pisahkan target dan fitur prediktor
     X = df.drop(columns=[target_col])
     y = df[target_col]
@@ -87,8 +83,8 @@ def run_evaluation_pipeline(df, target_col, label):
     # 1-8: Menghitung metrik evaluasi
     sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi = hitung_metrik(y_test, y_pred)
 
-    # 9: Plot ROC curve dan hitung AUC, hanya jika biner
-    auc_value = plot_roc_curve(y_test, y_pred_prob, label)
+    # 9: Plot ROC curve dan hitung AUC, menggunakan pos_label yang dipilih oleh user
+    auc_value = plot_roc_curve(y_test, y_pred_prob, pos_label, label)
 
     # Menampilkan interpretasi hasil
     interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi, auc_value, label)
@@ -99,28 +95,35 @@ def run_evaluation_pipeline(df, target_col, label):
 st.title("AI by Allam Rafi FKUI 2022_Research Scientist")
 st.write("Unggah hingga 10 dataset Anda untuk membandingkan ROC dan AUC.")
 
-# Mengunggah hingga 10 file dataset
+# Menggunakan layout kiri dan kanan agar tampil lebih rapi
+cols = st.columns(2)
+
+# Mengunggah hingga 10 file dataset di dua kolom
 uploaded_files = []
-for i in range(1, 11):
-    uploaded_file = st.file_uploader(f"Unggah Dataset {i} (Excel)", type=["xlsx"], key=f"file_{i}")
-    if uploaded_file:
-        uploaded_files.append(uploaded_file)
+for i in range(10):
+    col = cols[i % 2]  # Bergantian antara kolom kiri dan kanan
+    with col:
+        uploaded_file = st.file_uploader(f"Unggah Dataset {i + 1} (Excel)", type=["xlsx"], key=f"file_{i}")
+        if uploaded_file:
+            uploaded_files.append(uploaded_file)
 
 # Menjalankan analisis jika ada file yang diunggah
 if len(uploaded_files) > 0:
     plt.figure(figsize=(10, 6))
-    
-    # Iterasi untuk setiap file yang diunggah
+
     for idx, file in enumerate(uploaded_files):
         df = pd.read_excel(file)
         st.write(f"Dataset {idx + 1}:")
         st.write(df.head())
-        
+
         # Pilih kolom target untuk setiap dataset
         target_col = st.selectbox(f"Pilih kolom target untuk Dataset {idx + 1}", options=df.columns, key=f"target_{idx + 1}")
         
+        # Pilih kelas yang menjadi kelas positif (misalnya 1 atau 2)
+        pos_label = st.selectbox(f"Pilih kelas positif untuk Dataset {idx + 1}", options=df[target_col].unique(), key=f"pos_label_{idx + 1}")
+
         # Jalankan pipeline evaluasi
-        auc_value = run_evaluation_pipeline(df, target_col, f"Dataset {idx + 1}")
+        auc_value = run_evaluation_pipeline(df, target_col, pos_label, f"Dataset {idx + 1}")
 
     # Menampilkan kurva ROC untuk semua dataset
     plt.plot([0, 1], [0, 1], 'r--')  # Garis acak
