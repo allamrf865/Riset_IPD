@@ -99,7 +99,7 @@ def run_evaluation_pipeline(df, target_col, pos_label, label):
 
 # Antarmuka Streamlit
 st.title("AI by Allam Rafi FKUI 2022_Research Scientist")
-st.write("Unggah hingga 10 dataset Anda untuk membandingkan ROC dan AUC.")
+st.write("Deteksi Sensitivitas, Spesifisitas, PPV, NPV, Prevalensi, PLR, NLR, Akurasi, dan ROC AUC.")
 
 # Menggunakan layout kiri dan kanan agar tampil lebih rapi
 cols = st.columns(2)
