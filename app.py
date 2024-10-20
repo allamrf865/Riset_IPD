@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Fungsi untuk menghitung metrik evaluasi
 def hitung_metrik(y_true, y_pred):
@@ -30,7 +31,7 @@ def hitung_metrik(y_true, y_pred):
     prevalensi = (true_positives + false_negatives) / len(y_true) if len(y_true) > 0 else float('nan')
 
     # 6. Rasio Kemungkinan Positif (PLR)
-    plr = sensitivitas / (1 - spesifisitas) if spesifisitas < 1 else float('nan')
+    plr = sensitivitas / (1 - spesifisitas) if (1 - spesifisitas) > 0 else float('nan')
 
     # 7. Rasio Kemungkinan Negatif (NLR)
     nlr = (1 - sensitivitas) / spesifisitas if spesifisitas > 0 else float('nan')
@@ -54,13 +55,13 @@ def interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, aku
     st.subheader(f"Interpretasi Hasil untuk {label}")
     
     # Gunakan try-except atau cek untuk menggantikan NaN dengan informasi yang lebih jelas
-    st.write(f"Sensitivitas: {sensitivitas:.2f} - Model mendeteksi {sensitivitas*100:.1f}% dari semua kasus positif.") if not pd.isna(sensitivitas) else st.write("Sensitivitas: Tidak terdefinisi")
-    st.write(f"Spesifisitas: {spesifisitas:.2f} - Model mendeteksi {spesifisitas*100:.1f}% dari semua kasus negatif.") if not pd.isna(spesifisitas) else st.write("Spesifisitas: Tidak terdefinisi")
-    st.write(f"Nilai Duga Positif (PPV): {ppv:.2f} - {ppv*100:.1f}% dari prediksi positif adalah benar.") if not pd.isna(ppv) else st.write("Nilai Duga Positif: Tidak terdefinisi")
-    st.write(f"Nilai Duga Negatif (NPV): {npv:.2f} - {npv*100:.1f}% dari prediksi negatif adalah benar.") if not pd.isna(npv) else st.write("Nilai Duga Negatif: Tidak terdefinisi")
-    st.write(f"Prevalensi: {prevalensi:.2f} - Prevalensi kasus positif dalam dataset.") if not pd.isna(prevalensi) else st.write("Prevalensi: Tidak terdefinisi")
-    st.write(f"Rasio Kemungkinan Positif (PLR): {plr:.2f} - Likelihood hasil positif benar-benar positif.") if not pd.isna(plr) else st.write("Rasio Kemungkinan Positif: Tidak terdefinisi")
-    st.write(f"Rasio Kemungkinan Negatif (NLR): {nlr:.2f} - Likelihood hasil negatif benar-benar negatif.") if not pd.isna(nlr) else st.write("Rasio Kemungkinan Negatif: Tidak terdefinisi")
+    st.write(f"Sensitivitas: {sensitivitas:.2f} - Model mendeteksi {sensitivitas*100:.1f}% dari semua kasus positif.") if not np.isnan(sensitivitas) else st.write("Sensitivitas: Tidak terdefinisi")
+    st.write(f"Spesifisitas: {spesifisitas:.2f} - Model mendeteksi {spesifisitas*100:.1f}% dari semua kasus negatif.") if not np.isnan(spesifisitas) else st.write("Spesifisitas: Tidak terdefinisi")
+    st.write(f"Nilai Duga Positif (PPV): {ppv:.2f} - {ppv*100:.1f}% dari prediksi positif adalah benar.") if not np.isnan(ppv) else st.write("Nilai Duga Positif: Tidak terdefinisi")
+    st.write(f"Nilai Duga Negatif (NPV): {npv:.2f} - {npv*100:.1f}% dari prediksi negatif adalah benar.") if not np.isnan(npv) else st.write("Nilai Duga Negatif: Tidak terdefinisi")
+    st.write(f"Prevalensi: {prevalensi:.2f} - Prevalensi kasus positif dalam dataset.") if not np.isnan(prevalensi) else st.write("Prevalensi: Tidak terdefinisi")
+    st.write(f"Rasio Kemungkinan Positif (PLR): {plr:.2f} - Likelihood hasil positif benar-benar positif.") if not np.isnan(plr) else st.write("Rasio Kemungkinan Positif: Tidak terdefinisi")
+    st.write(f"Rasio Kemungkinan Negatif (NLR): {nlr:.2f} - Likelihood hasil negatif benar-benar negatif.") if not np.isnan(nlr) else st.write("Rasio Kemungkinan Negatif: Tidak terdefinisi")
     st.write(f"Akurasi: {akurasi:.2f} - Model memiliki akurasi sebesar {akurasi*100:.1f}%.")
     if auc_value:
         st.write(f"AUC: {auc_value:.2f} - Area under the curve untuk {label}.")
@@ -96,7 +97,7 @@ def run_evaluation_pipeline(df, target_col, pos_label, label):
 
     return auc_value
 
-# 6. Antarmuka Streamlit
+# Antarmuka Streamlit
 st.title("AI by Allam Rafi FKUI 2022_Research Scientist")
 st.write("Unggah hingga 10 dataset Anda untuk membandingkan ROC dan AUC.")
 
