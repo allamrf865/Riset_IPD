@@ -42,6 +42,11 @@ def hitung_metrik(y_true, y_pred):
 
 # 3. Fungsi untuk visualisasi ROC dan menghitung AUC untuk satu dataset
 def plot_roc_curve(y_true, y_pred_prob, label):
+    # Memastikan target hanya dua kelas (klasifikasi biner)
+    if len(set(y_true)) != 2:
+        st.error(f"Target dataset {label} bukan biner. ROC Curve hanya bisa dihitung untuk klasifikasi biner.")
+        return None
+
     fpr, tpr, _ = roc_curve(y_true, y_pred_prob)
     auc_value = roc_auc_score(y_true, y_pred_prob)
 
@@ -59,7 +64,8 @@ def interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, aku
     st.write(f"Rasio Kemungkinan Positif (PLR): {plr:.2f} - Likelihood hasil positif benar-benar positif.")
     st.write(f"Rasio Kemungkinan Negatif (NLR): {nlr:.2f} - Likelihood hasil negatif benar-benar negatif.")
     st.write(f"Akurasi: {akurasi:.2f} - Model memiliki akurasi sebesar {akurasi*100:.1f}%.")
-    st.write(f"AUC: {auc_value:.2f} - Area under the curve untuk {label}.")
+    if auc_value:
+        st.write(f"AUC: {auc_value:.2f} - Area under the curve untuk {label}.")
 
 # 5. Fungsi utama untuk menjalankan pipeline analisis untuk satu dataset
 def run_evaluation_pipeline(df, target_col, label):
@@ -81,7 +87,7 @@ def run_evaluation_pipeline(df, target_col, label):
     # 1-8: Menghitung metrik evaluasi
     sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi = hitung_metrik(y_test, y_pred)
 
-    # 9: Plot ROC curve dan hitung AUC
+    # 9: Plot ROC curve dan hitung AUC, hanya jika biner
     auc_value = plot_roc_curve(y_test, y_pred_prob, label)
 
     # Menampilkan interpretasi hasil
