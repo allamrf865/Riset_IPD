@@ -40,26 +40,17 @@ def hitung_metrik(y_true, y_pred):
 
     return sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi
 
-# 3. Fungsi untuk visualisasi ROC dan menghitung AUC
-def plot_roc_curve(y_true, y_pred_prob):
+# 3. Fungsi untuk visualisasi ROC dan menghitung AUC untuk satu dataset
+def plot_roc_curve(y_true, y_pred_prob, label):
     fpr, tpr, _ = roc_curve(y_true, y_pred_prob)
     auc_value = roc_auc_score(y_true, y_pred_prob)
 
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, label=f'AUC = {auc_value:.2f}')
-    plt.plot([0, 1], [0, 1], 'r--')  # Garis acak
-    plt.xlabel('False Positive Rate (1 - Spesifisitas)')
-    plt.ylabel('True Positive Rate (Sensitivitas)')
-    plt.title('ROC Curve')
-    plt.legend(loc='lower right')
-    plt.grid()
-    st.pyplot(plt)
-
+    plt.plot(fpr, tpr, label=f'{label} (AUC = {auc_value:.2f})')
     return auc_value
 
 # 4. Fungsi untuk menampilkan interpretasi
-def interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi, auc_value):
-    st.subheader("Interpretasi Hasil")
+def interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi, auc_value, label):
+    st.subheader(f"Interpretasi Hasil untuk {label}")
     st.write(f"Sensitivitas: {sensitivitas:.2f} - Model mendeteksi {sensitivitas*100:.1f}% dari semua kasus positif.")
     st.write(f"Spesifisitas: {spesifisitas:.2f} - Model mendeteksi {spesifisitas*100:.1f}% dari semua kasus negatif.")
     st.write(f"Nilai Duga Positif (PPV): {ppv:.2f} - {ppv*100:.1f}% dari prediksi positif adalah benar.")
@@ -68,18 +59,13 @@ def interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, aku
     st.write(f"Rasio Kemungkinan Positif (PLR): {plr:.2f} - Likelihood hasil positif benar-benar positif.")
     st.write(f"Rasio Kemungkinan Negatif (NLR): {nlr:.2f} - Likelihood hasil negatif benar-benar negatif.")
     st.write(f"Akurasi: {akurasi:.2f} - Model memiliki akurasi sebesar {akurasi*100:.1f}%.")
-    st.write(f"AUC: {auc_value:.2f} - Area under the curve, menunjukkan kemampuan model membedakan antara kelas positif dan negatif.")
+    st.write(f"AUC: {auc_value:.2f} - Area under the curve untuk {label}.")
 
-# 5. Fungsi utama untuk menjalankan pipeline analisis
-def run_evaluation_pipeline(df, target_col):
-    # Pastikan target kolom dipilih dengan benar
-    if target_col not in df.columns:
-        st.error(f"Kolom target '{target_col}' tidak ditemukan dalam dataset.")
-        return
-
+# 5. Fungsi utama untuk menjalankan pipeline analisis untuk satu dataset
+def run_evaluation_pipeline(df, target_col, label):
     # Pisahkan target dan fitur prediktor
-    X = df.drop(columns=[target_col])  # Semua kolom selain target sebagai fitur
-    y = df[target_col]  # Kolom target
+    X = df.drop(columns=[target_col])
+    y = df[target_col]
 
     # Membagi dataset menjadi training dan testing
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
@@ -96,25 +82,45 @@ def run_evaluation_pipeline(df, target_col):
     sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi = hitung_metrik(y_test, y_pred)
 
     # 9: Plot ROC curve dan hitung AUC
-    auc_value = plot_roc_curve(y_test, y_pred_prob)
+    auc_value = plot_roc_curve(y_test, y_pred_prob, label)
 
     # Menampilkan interpretasi hasil
-    interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi, auc_value)
+    interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, akurasi, auc_value, label)
+
+    return auc_value
 
 # 6. Antarmuka Streamlit
 st.title("AI by Allam Rafi FKUI 2022_Research Scientist")
-st.write("Unggah dataset Anda dan dapatkan analisis metrik evaluasi AI.")
+st.write("Unggah hingga 10 dataset Anda untuk membandingkan ROC dan AUC.")
 
-uploaded_file = st.file_uploader("Unggah Dataset (Excel)", type=["xlsx"])
+# Mengunggah hingga 10 file dataset
+uploaded_files = []
+for i in range(1, 11):
+    uploaded_file = st.file_uploader(f"Unggah Dataset {i} (Excel)", type=["xlsx"], key=f"file_{i}")
+    if uploaded_file:
+        uploaded_files.append(uploaded_file)
 
-if uploaded_file is not None:
-    df = pd.read_excel(uploaded_file)
-    st.write("Dataset yang diunggah:")
-    st.write(df.head())
+# Menjalankan analisis jika ada file yang diunggah
+if len(uploaded_files) > 0:
+    plt.figure(figsize=(10, 6))
+    
+    # Iterasi untuk setiap file yang diunggah
+    for idx, file in enumerate(uploaded_files):
+        df = pd.read_excel(file)
+        st.write(f"Dataset {idx + 1}:")
+        st.write(df.head())
+        
+        # Pilih kolom target untuk setiap dataset
+        target_col = st.selectbox(f"Pilih kolom target untuk Dataset {idx + 1}", options=df.columns, key=f"target_{idx + 1}")
+        
+        # Jalankan pipeline evaluasi
+        auc_value = run_evaluation_pipeline(df, target_col, f"Dataset {idx + 1}")
 
-    # Menampilkan pilihan untuk memilih kolom target
-    target_col = st.selectbox("Pilih kolom target (label)", options=df.columns)
-
-    # Menjalankan evaluasi jika pengguna memilih target
-    if st.button("Jalankan Analisis"):
-        run_evaluation_pipeline(df, target_col)
+    # Menampilkan kurva ROC untuk semua dataset
+    plt.plot([0, 1], [0, 1], 'r--')  # Garis acak
+    plt.xlabel('False Positive Rate (1 - Spesifisitas)')
+    plt.ylabel('True Positive Rate (Sensitivitas)')
+    plt.title('Perbandingan ROC Curve untuk Semua Dataset')
+    plt.legend(loc='lower right')
+    plt.grid()
+    st.pyplot(plt)
