@@ -71,10 +71,15 @@ def interpretasi(sensitivitas, spesifisitas, ppv, npv, prevalensi, plr, nlr, aku
     st.write(f"AUC: {auc_value:.2f} - Area under the curve, menunjukkan kemampuan model membedakan antara kelas positif dan negatif.")
 
 # 5. Fungsi utama untuk menjalankan pipeline analisis
-def run_evaluation_pipeline(df):
-    # Misalkan 'Hasil PA' sebagai label, dan fitur lainnya adalah prediktor
-    X = df.drop(columns=['Hasil PA'])
-    y = df['Hasil PA']
+def run_evaluation_pipeline(df, target_col):
+    # Pastikan target kolom dipilih dengan benar
+    if target_col not in df.columns:
+        st.error(f"Kolom target '{target_col}' tidak ditemukan dalam dataset.")
+        return
+
+    # Pisahkan target dan fitur prediktor
+    X = df.drop(columns=[target_col])  # Semua kolom selain target sebagai fitur
+    y = df[target_col]  # Kolom target
 
     # Membagi dataset menjadi training dan testing
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
@@ -106,6 +111,10 @@ if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
     st.write("Dataset yang diunggah:")
     st.write(df.head())
-    
-    # Menjalankan evaluasi jika dataset telah diunggah
-    run_evaluation_pipeline(df)
+
+    # Menampilkan pilihan untuk memilih kolom target
+    target_col = st.selectbox("Pilih kolom target (label)", options=df.columns)
+
+    # Menjalankan evaluasi jika pengguna memilih target
+    if st.button("Jalankan Analisis"):
+        run_evaluation_pipeline(df, target_col)
