@@ -6,12 +6,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-import plotly.graph_objects as go
 import numpy as np
-# Import matplotlib for 3D plotting
-from mpl_toolkits.mplot3d import Axes3D
-# Set Streamlit page configuration
 
+# Set Streamlit page configuration
 st.set_page_config(
     page_title="AI Research Scientist Evaluation",
     page_icon="📊",
@@ -22,8 +19,9 @@ st.set_page_config(
 st.markdown("""
     <style>
         body {
-            background: linear-gradient(135deg, #F0F8FF, #ADD8E6);
+            background: linear-gradient(135deg, #f0f8ff, #d8bfd8);
             font-family: 'Poppins', sans-serif;
+            color: #333333;
         }
         .header {
             background: rgba(255, 255, 255, 0.85);
@@ -43,7 +41,6 @@ st.markdown("""
         .metric-box {
             background-color: white;
             border: 2px solid #007BFF;
-            color: #333333;
             border-radius: 10px;
             padding: 1.5rem;
             text-align: center;
@@ -64,7 +61,7 @@ st.markdown("""
 st.markdown("""
     <div class="header">
         <h1>📊 AI Research Scientist Evaluation</h1>
-        <p>Analyze machine learning models with advanced metrics and stunning 2D & 3D visualizations.</p>
+        <p>Analyze machine learning models with colorful, advanced 2D visualizations.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -127,46 +124,30 @@ if uploaded_files:
                 col4.metric("Accuracy", f"{accuracy:.2f}")
 
                 # Confusion Matrix Heatmap
-                st.markdown("#### Confusion Matrix (2D)")
-                fig, ax = plt.subplots()
-                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=["Negative", "Positive"], yticklabels=["Negative", "Positive"])
-                plt.title("Confusion Matrix")
-                plt.xlabel("Predicted")
-                plt.ylabel("Actual")
+                st.markdown("#### Confusion Matrix (Colorful 2D)")
+                fig, ax = plt.subplots(figsize=(8, 6))
+                sns.heatmap(
+                    cm, annot=True, fmt='d', cmap='coolwarm', 
+                    xticklabels=["Negative", "Positive"], 
+                    yticklabels=["Negative", "Positive"]
+                )
+                plt.title("Confusion Matrix", fontsize=16)
+                plt.xlabel("Predicted", fontsize=14)
+                plt.ylabel("Actual", fontsize=14)
                 st.pyplot(fig)
 
                 # ROC Curve
                 st.markdown("#### ROC Curve (2D)")
                 fpr, tpr, _ = roc_curve(y_test, y_pred_prob)
-                fig, ax = plt.subplots()
-                plt.plot(fpr, tpr, label=f"AUC = {auc:.2f}")
-                plt.plot([0, 1], [0, 1], 'r--', label="Random Guess")
-                plt.xlabel("False Positive Rate")
-                plt.ylabel("True Positive Rate")
-                plt.title("ROC Curve")
-                plt.legend()
+                fig, ax = plt.subplots(figsize=(8, 6))
+                plt.plot(fpr, tpr, label=f"AUC = {auc:.2f}", color="blue", linewidth=2)
+                plt.plot([0, 1], [0, 1], 'r--', label="Random Guess", linewidth=2)
+                plt.fill_between(fpr, tpr, color='skyblue', alpha=0.3)
+                plt.xlabel("False Positive Rate", fontsize=14)
+                plt.ylabel("True Positive Rate", fontsize=14)
+                plt.title("ROC Curve", fontsize=16)
+                plt.legend(loc="lower right")
                 st.pyplot(fig)
-
-                # 3D ROC Curve Visualization
-                st.markdown("#### ROC Curve (3D Visualization)")
-                thresholds = np.linspace(0, 1, len(fpr))
-                fig_3d = go.Figure(data=[
-                    go.Surface(
-                        z=np.array([tpr, fpr, thresholds]).T,
-                        colorscale="Viridis",
-                        showscale=True
-                    )
-                ])
-                fig_3d.update_layout(
-                    title="3D ROC Curve",
-                    scene=dict(
-                        xaxis_title="Thresholds",
-                        yaxis_title="False Positive Rate",
-                        zaxis_title="True Positive Rate"
-                    )
-                )
-                st.plotly_chart(fig_3d)
 
 else:
     st.markdown("### Please upload a dataset to get started!")
-
