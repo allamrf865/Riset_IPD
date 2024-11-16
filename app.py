@@ -4,14 +4,15 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score
-import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
 import plotly.graph_objects as go
-import time
+import numpy as np
 
-# Set page configuration
+# Set Streamlit page configuration
 st.set_page_config(
     page_title="AI Research Scientist Evaluation",
-    page_icon="🧪",
+    page_icon="📊",
     layout="wide"
 )
 
@@ -19,16 +20,11 @@ st.set_page_config(
 st.markdown("""
     <style>
         body {
-            background: linear-gradient(135deg, #FAD961, #F76B1C);
+            background: linear-gradient(135deg, #F0F8FF, #ADD8E6);
             font-family: 'Poppins', sans-serif;
-            color: #333333;
-        }
-        .reportview-container {
-            padding: 1rem 2rem;
         }
         .header {
             background: rgba(255, 255, 255, 0.85);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             padding: 2rem;
             text-align: center;
@@ -36,7 +32,7 @@ st.markdown("""
         }
         .header h1 {
             font-size: 2.5rem;
-            color: #FF5733;
+            color: #007BFF;
         }
         .header p {
             font-size: 1.2rem;
@@ -44,7 +40,7 @@ st.markdown("""
         }
         .metric-box {
             background-color: white;
-            border: 2px solid #FF5733;
+            border: 2px solid #007BFF;
             color: #333333;
             border-radius: 10px;
             padding: 1.5rem;
@@ -53,23 +49,11 @@ st.markdown("""
         .metric-box h1 {
             margin: 0;
             font-size: 1.8rem;
-            color: #FF5733;
+            color: #007BFF;
         }
         .metric-box p {
             margin: 0;
             font-size: 1.2rem;
-        }
-        .watermark {
-            font-size: 12px;
-            color: white;
-            text-align: right;
-            margin-top: 50px;
-        }
-        .dataframe {
-            background-color: white;
-            border-radius: 10px;
-            padding: 1rem;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -77,21 +61,14 @@ st.markdown("""
 # Header
 st.markdown("""
     <div class="header">
-        <h1>🧪 AI Research Scientist Evaluation 🧪</h1>
-        <p>Analyze datasets with advanced metrics and state-of-the-art visualizations, designed for research scientists.</p>
+        <h1>📊 AI Research Scientist Evaluation</h1>
+        <p>Analyze machine learning models with advanced metrics and stunning 2D & 3D visualizations.</p>
     </div>
 """, unsafe_allow_html=True)
 
 # Sidebar for file upload
 st.sidebar.title("📂 Upload Your Dataset")
 uploaded_files = st.sidebar.file_uploader("Upload Excel files", type=["xlsx"], accept_multiple_files=True)
-
-# Footer watermark
-st.markdown("""
-    <div class="watermark">
-        AI by Allam Rafi FKUI 2022
-    </div>
-""", unsafe_allow_html=True)
 
 # Main layout
 if uploaded_files:
@@ -100,9 +77,7 @@ if uploaded_files:
         # Read the dataset
         df = pd.read_excel(uploaded_file)
         st.markdown(f"#### Dataset {idx + 1}: {uploaded_file.name}")
-        st.markdown('<div class="dataframe">', unsafe_allow_html=True)
         st.dataframe(df.head())
-        st.markdown('</div>', unsafe_allow_html=True)
 
         # Select target column and positive class
         target_col = st.selectbox(
@@ -116,68 +91,80 @@ if uploaded_files:
             key=f"pos_label_{idx}"
         )
 
-        # Button to analyze the dataset
+        # Analyze dataset button
         if st.button(f"Analyze Dataset {idx + 1}", key=f"analyze_{idx}"):
-            # Show progress bar
             with st.spinner("Analyzing data..."):
-                time.sleep(2)  # Simulating computation time
+                # Data preprocessing
+                df[target_col] = df[target_col].apply(lambda x: 1 if x == pos_label else 0)
+                X = df.drop(columns=[target_col])
+                y = df[target_col]
 
-            # Process data
-            df[target_col] = df[target_col].apply(lambda x: 1 if x == pos_label else 0)
-            X = df.drop(columns=[target_col])
-            y = df[target_col]
+                # Train-test split
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-            # Split data and train model
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-            model = RandomForestClassifier(n_estimators=100, random_state=42)
-            model.fit(X_train, y_train)
+                # Train model
+                model = RandomForestClassifier(n_estimators=100, random_state=42)
+                model.fit(X_train, y_train)
 
-            # Make predictions
-            y_pred = model.predict(X_test)
-            y_pred_prob = model.predict_proba(X_test)[:, 1]
+                # Make predictions
+                y_pred = model.predict(X_test)
+                y_pred_prob = model.predict_proba(X_test)[:, 1]
 
-            # Calculate metrics
-            cm = confusion_matrix(y_test, y_pred)
-            auc = roc_auc_score(y_test, y_pred_prob)
+                # Calculate metrics
+                cm = confusion_matrix(y_test, y_pred)
+                auc = roc_auc_score(y_test, y_pred_prob)
+                sensitivity = cm[1, 1] / (cm[1, 1] + cm[1, 0])
+                specificity = cm[0, 0] / (cm[0, 0] + cm[0, 1])
+                accuracy = accuracy_score(y_test, y_pred)
 
-            # Display metrics as cards
-            col1, col2, col3 = st.columns(3)
-            col1.markdown("""
-                <div class="metric-box">
-                    <h1>AUC</h1>
-                    <p>{:.2f}</p>
-                </div>
-            """.format(auc), unsafe_allow_html=True)
-            col2.markdown("""
-                <div class="metric-box">
-                    <h1>Sensitivity</h1>
-                    <p>{:.2f}</p>
-                </div>
-            """.format(cm[1, 1] / (cm[1, 1] + cm[1, 0])), unsafe_allow_html=True)
-            col3.markdown("""
-                <div class="metric-box">
-                    <h1>Specificity</h1>
-                    <p>{:.2f}</p>
-                </div>
-            """.format(cm[0, 0] / (cm[0, 0] + cm[0, 1])), unsafe_allow_html=True)
+                # Display metrics
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("AUC", f"{auc:.2f}")
+                col2.metric("Sensitivity", f"{sensitivity:.2f}")
+                col3.metric("Specificity", f"{specificity:.2f}")
+                col4.metric("Accuracy", f"{accuracy:.2f}")
 
-            # Confusion matrix heatmap
-            st.markdown("#### Confusion Matrix")
-            fig = px.imshow(cm, text_auto=True, labels=dict(x="Predicted", y="Actual"), x=["Negative", "Positive"], y=["Negative", "Positive"])
-            st.plotly_chart(fig)
+                # Confusion Matrix Heatmap
+                st.markdown("#### Confusion Matrix (2D)")
+                fig, ax = plt.subplots()
+                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=["Negative", "Positive"], yticklabels=["Negative", "Positive"])
+                plt.title("Confusion Matrix")
+                plt.xlabel("Predicted")
+                plt.ylabel("Actual")
+                st.pyplot(fig)
 
-            # ROC curve
-            st.markdown("#### ROC Curve")
-            fpr, tpr, _ = roc_curve(y_test, y_pred_prob)
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=fpr, y=tpr, mode='lines', name='ROC Curve'))
-            fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode='lines', name='Random Guess', line=dict(dash='dash')))
-            fig.update_layout(title="ROC Curve", xaxis_title="False Positive Rate", yaxis_title="True Positive Rate")
-            st.plotly_chart(fig)
+                # ROC Curve
+                st.markdown("#### ROC Curve (2D)")
+                fpr, tpr, _ = roc_curve(y_test, y_pred_prob)
+                fig, ax = plt.subplots()
+                plt.plot(fpr, tpr, label=f"AUC = {auc:.2f}")
+                plt.plot([0, 1], [0, 1], 'r--', label="Random Guess")
+                plt.xlabel("False Positive Rate")
+                plt.ylabel("True Positive Rate")
+                plt.title("ROC Curve")
+                plt.legend()
+                st.pyplot(fig)
+
+                # 3D ROC Curve Visualization
+                st.markdown("#### ROC Curve (3D Visualization)")
+                thresholds = np.linspace(0, 1, len(fpr))
+                fig_3d = go.Figure(data=[
+                    go.Surface(
+                        z=np.array([tpr, fpr, thresholds]).T,
+                        colorscale="Viridis",
+                        showscale=True
+                    )
+                ])
+                fig_3d.update_layout(
+                    title="3D ROC Curve",
+                    scene=dict(
+                        xaxis_title="Thresholds",
+                        yaxis_title="False Positive Rate",
+                        zaxis_title="True Positive Rate"
+                    )
+                )
+                st.plotly_chart(fig_3d)
 
 else:
-    st.markdown("""
-        <div style="text-align: center; margin-top: 50px;">
-            <h3>👈 Upload your dataset to start analyzing!</h3>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### Please upload a dataset to get started!")
+
