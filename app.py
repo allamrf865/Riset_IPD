@@ -8,8 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.graph_objects as go
 import numpy as np
-
+# Import matplotlib for 3D plotting
+from mpl_toolkits.mplot3d import Axes3D
 # Set Streamlit page configuration
+
 st.set_page_config(
     page_title="AI Research Scientist Evaluation",
     page_icon="📊",
