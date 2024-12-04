@@ -1,8 +1,12 @@
 import streamlit as st
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier, StackingClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, roc_curve, accuracy_score, auc
+from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -70,63 +74,6 @@ uploaded_files = st.sidebar.file_uploader(
     help="You can upload multiple Excel files (up to 10)."
 )
 
-# Function to calculate and display metrics
-def evaluate_metrics(y_true, y_pred):
-    # Confusion Matrix
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-
-    # Handle edge case: perfect predictions (avoid division by zero)
-    if (tp + fn) == 0:  # No True Positives and False Negatives
-        sensitivitas = 0.0
-    else:
-        sensitivitas = tp / (tp + fn)
-
-    if (tn + fp) == 0:  # No True Negatives and False Positives
-        spesifisitas = 0.0
-    else:
-        spesifisitas = tn / (tn + fp)
-
-    if (tp + fp) == 0:  # No True Positives and False Positives
-        nilai_duga_positif = 0.0
-    else:
-        nilai_duga_positif = tp / (tp + fp)
-
-    if (tn + fn) == 0:  # No True Negatives and False Negatives
-        nilai_duga_negatif = 0.0
-    else:
-        nilai_duga_negatif = tn / (tn + fn)
-
-    prevalensi = (tp + fn) / len(y_true) if len(y_true) > 0 else 0
-
-    # Avoid infinity in likelihood ratios
-    if (1 - spesifisitas) != 0:
-        rasio_kemungkinan_positif = sensitivitas / (1 - spesifisitas)
-    else:
-        rasio_kemungkinan_positif = float('inf')
-
-    if spesifisitas != 0:
-        rasio_kemungkinan_negatif = (1 - sensitivitas) / spesifisitas
-    else:
-        rasio_kemungkinan_negatif = float('inf')
-
-    akurasi = (tp + tn) / len(y_true) if len(y_true) > 0 else 0
-
-    # ROC and AUC
-    fpr, tpr, _ = roc_curve(y_true, y_pred)
-    auc_value = auc(fpr, tpr)
-
-    return {
-        "Sensitivitas (Recall)": sensitivitas,
-        "Spesifisitas": spesifisitas,
-        "Nilai Duga Positif": nilai_duga_positif,
-        "Nilai Duga Negatif": nilai_duga_negatif,
-        "Prevalensi": prevalensi,
-        "Rasio Kemungkinan Positif": rasio_kemungkinan_positif,
-        "Rasio Kemungkinan Negatif": rasio_kemungkinan_negatif,
-        "Akurasi": akurasi,
-        "AUC": auc_value
-    }, fpr, tpr, auc_value
-
 # Main layout for datasets
 if uploaded_files:
     st.markdown("### 📊 Datasets Overview")
@@ -160,43 +107,70 @@ if uploaded_files:
                 # Analyze dataset button
                 if st.button(f"Analyze Dataset {i + 1}", key=f"analyze_{i}"):
                     with st.spinner("Analyzing data..."):
-                        # Data preprocessing
-                        df[target_col] = df[target_col].apply(lambda x: 1 if x == pos_label else 0)
-                        X = pd.get_dummies(df.drop(columns=[target_col]), drop_first=True)
-                        y = df[target_col]
+                        # Data Preprocessing
+                        # Handle missing values
+                        imputer = SimpleImputer(strategy="most_frequent")
+                        df_imputed = pd.DataFrame(imputer.fit_transform(df), columns=df.columns)
+                        
+                        # Convert target column to binary (0, 1)
+                        df_imputed[target_col] = df_imputed[target_col].apply(lambda x: 1 if x == pos_label else 0)
+
+                        # Feature scaling (standardize)
+                        scaler = StandardScaler()
+                        X_scaled = scaler.fit_transform(df_imputed.drop(columns=[target_col]))
+                        y = df_imputed[target_col]
 
                         # Train-test split
-                        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+                        X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.3, random_state=42)
 
-                        # Train model
-                        model = RandomForestClassifier(n_estimators=100, random_state=42)
+                        # Ensemble Learning Models
+                        base_learners = [
+                            ("rf", RandomForestClassifier(n_estimators=100, random_state=42)),
+                            ("gb", GradientBoostingClassifier(n_estimators=100, random_state=42)),
+                            ("ab", AdaBoostClassifier(n_estimators=100, random_state=42)),
+                            ("svm", SVC(probability=True, random_state=42))
+                        ]
+
+                        # Stacking Classifier
+                        model = StackingClassifier(estimators=base_learners, final_estimator=LogisticRegression())
                         model.fit(X_train, y_train)
-
-                        # Make predictions
                         y_pred = model.predict(X_test)
                         y_pred_prob = model.predict_proba(X_test)[:, 1]
 
-                        # Calculate metrics
-                        metrics, fpr, tpr, auc_value = evaluate_metrics(y_test, y_pred)
+                        # Confusion Matrix Calculation
+                        cm = confusion_matrix(y_test, y_pred)
+                        TP, TN, FP, FN = cm.ravel()
 
-                        # Display metrics
+                        # Metric Calculations
+                        sensitivity = TP / (TP + FN)
+                        specificity = TN / (TN + FP)
+                        positive_predictive_value = TP / (TP + FP)
+                        negative_predictive_value = TN / (TN + FN)
+                        prevalence = (TP + FN) / len(y)
+                        positive_likelihood_ratio = sensitivity / (1 - specificity) if (1 - specificity) != 0 else float('inf')
+                        negative_likelihood_ratio = (1 - sensitivity) / specificity if specificity != 0 else float('inf')
+                        accuracy = accuracy_score(y_test, y_pred)
+                        auc = roc_auc_score(y_test, y_pred_prob)
+
+                        # Display Metrics
                         st.markdown("#### Model Metrics")
                         col1, col2, col3 = st.columns(3)
-                        col1.metric("AUC", f"{auc_value:.2f}")
-                        col2.metric("Sensitivity", f"{metrics['Sensitivitas (Recall)']:.2f}")
-                        col3.metric("Specificity", f"{metrics['Spesifisitas']:.2f}")
+                        col1.metric("AUC", f"{auc:.2f}")
+                        col2.metric("Sensitivity (Recall)", f"{sensitivity:.2f}")
+                        col3.metric("Specificity", f"{specificity:.2f}")
                         col4, col5 = st.columns(2)
-                        col4.metric("Accuracy", f"{metrics['Akurasi']:.2f}")
+                        col4.metric("Accuracy", f"{accuracy:.2f}")
 
-                        # Display all other metrics
+                        # Additional Metrics
                         st.markdown("#### Additional Metrics")
-                        for metric, value in metrics.items():
-                            if metric not in ["AUC", "Sensitivity", "Specificity", "Accuracy"]:
-                                st.metric(metric, f"{value:.2f}")
+                        st.write(f"**Nilai Duga Positif (Positive Predictive Value)**: {positive_predictive_value:.2f}")
+                        st.write(f"**Nilai Duga Negatif (Negative Predictive Value)**: {negative_predictive_value:.2f}")
+                        st.write(f"**Prevalensi (Prevalence)**: {prevalence:.2f}")
+                        st.write(f"**Rasio Kemungkinan Positif (Positive Likelihood Ratio)**: {positive_likelihood_ratio:.2f}")
+                        st.write(f"**Rasio Kemungkinan Negatif (Negative Likelihood Ratio)**: {negative_likelihood_ratio:.2f}")
 
                         # Confusion Matrix
                         st.markdown("#### Confusion Matrix")
-                        cm = confusion_matrix(y_test, y_pred)
                         fig, ax = plt.subplots()
                         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=["Negative", "Positive"], yticklabels=["Negative", "Positive"])
                         plt.title("Confusion Matrix")
@@ -206,8 +180,9 @@ if uploaded_files:
 
                         # ROC Curve
                         st.markdown("#### ROC Curve")
+                        fpr, tpr, _ = roc_curve(y_test, y_pred_prob)
                         fig, ax = plt.subplots()
-                        plt.plot(fpr, tpr, label=f"AUC = {auc_value:.2f}")
+                        plt.plot(fpr, tpr, label=f"AUC = {auc:.2f}")
                         plt.plot([0, 1], [0, 1], 'r--', label="Random Guess")
                         plt.xlabel("False Positive Rate")
                         plt.ylabel("True Positive Rate")
