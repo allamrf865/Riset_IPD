@@ -6,6 +6,7 @@ from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score, auc
 
 # Set Streamlit page configuration
 st.set_page_config(
