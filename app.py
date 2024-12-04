@@ -73,7 +73,34 @@ uploaded_files = st.sidebar.file_uploader(
     accept_multiple_files=True,
     help="You can upload multiple Excel files (up to 10)."
 )
+# Branding AI and Bio Information
+st.markdown("""
+    <div class="header">
+        <h1>🌟 About Me - Muhammad Allam Rafi</h1>
+        <p>AI Enthusiast | Developer | Researcher</p>
+    </div>
+""", unsafe_allow_html=True)
 
+st.markdown("""
+    <div class="dataset-card">
+        <h4>📋 Biodata</h4>
+        <p><strong>Name:</strong> Muhammad Allam Rafi</p>
+        <p><strong>Organization:</strong> TBM, FSI, Oxygen, LPP, JIMKI</p>
+        <p><strong>Faculty:</strong> FKUI 2022</p>
+        <p><strong>Mission:</strong> Dedicated to enhancing AI and machine learning applications to solve real-world problems. Passionate about research and innovation in artificial intelligence, and committed to making impactful contributions in healthcare and other sectors.</p>
+        <p><strong>Instagram:</strong> <a href="https://instagram.com/allamrf865" target="_blank">instagram.com/allamrf865</a></p>
+    </div>
+""", unsafe_allow_html=True)
+
+# You can also add an image or logo if desired
+st.image("https://via.placeholder.com/150", caption="Muhammad Allam Rafi", use_column_width=True)
+
+# Watermark or Footer to give credit
+st.markdown("""
+    <p style="text-align:center; font-size:14px; color:gray;">
+        Created by Muhammad Allam Rafi | FKUI 2022
+    </p>
+""", unsafe_allow_html=True)
 # Main layout for datasets
 if uploaded_files:
     st.markdown("### 📊 Datasets Overview")
