@@ -75,14 +75,40 @@ def evaluate_metrics(y_true, y_pred):
     # Confusion Matrix
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
 
-    # Calculate metrics
-    sensitivitas = tp / (tp + fn) if (tp + fn) != 0 else 0
-    spesifisitas = tn / (tn + fp) if (tn + fp) != 0 else 0
-    nilai_duga_positif = tp / (tp + fp) if (tp + fp) != 0 else 0
-    nilai_duga_negatif = tn / (tn + fn) if (tn + fn) != 0 else 0
+    # Handle edge case: perfect predictions (avoid division by zero)
+    if (tp + fn) == 0:  # No True Positives and False Negatives
+        sensitivitas = 0.0
+    else:
+        sensitivitas = tp / (tp + fn)
+
+    if (tn + fp) == 0:  # No True Negatives and False Positives
+        spesifisitas = 0.0
+    else:
+        spesifisitas = tn / (tn + fp)
+
+    if (tp + fp) == 0:  # No True Positives and False Positives
+        nilai_duga_positif = 0.0
+    else:
+        nilai_duga_positif = tp / (tp + fp)
+
+    if (tn + fn) == 0:  # No True Negatives and False Negatives
+        nilai_duga_negatif = 0.0
+    else:
+        nilai_duga_negatif = tn / (tn + fn)
+
     prevalensi = (tp + fn) / len(y_true) if len(y_true) > 0 else 0
-    rasio_kemungkinan_positif = sensitivitas / (1 - spesifisitas) if (1 - spesifisitas) != 0 else np.inf
-    rasio_kemungkinan_negatif = (1 - sensitivitas) / spesifisitas if spesifisitas != 0 else np.inf
+
+    # Avoid infinity in likelihood ratios
+    if (1 - spesifisitas) != 0:
+        rasio_kemungkinan_positif = sensitivitas / (1 - spesifisitas)
+    else:
+        rasio_kemungkinan_positif = float('inf')
+
+    if spesifisitas != 0:
+        rasio_kemungkinan_negatif = (1 - sensitivitas) / spesifisitas
+    else:
+        rasio_kemungkinan_negatif = float('inf')
+
     akurasi = (tp + tn) / len(y_true) if len(y_true) > 0 else 0
 
     # ROC and AUC
