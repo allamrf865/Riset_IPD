@@ -77,7 +77,7 @@ uploaded_files = st.sidebar.file_uploader(
 # Watermark or Footer to give credit
 st.sidebar.markdown("""
     <p style="text-align:center; font-size:14px; color:gray;">
-        Created by Muhammad Allam Rafi | FKUI 2022 (IG: instagram.com/allamrf865)
+        Created by Muhammad Allam Rafi | FKUI 2022 <a href="https://instagram.com/allamrf865" target="_blank">instagram.com/allamrf865</a>
     </p>
 """, unsafe_allow_html=True)
 
