@@ -2,11 +2,10 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score
+from sklearn.metrics import confusion_matrix, roc_curve, accuracy_score, auc
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score, auc
 
 # Set Streamlit page configuration
 st.set_page_config(
@@ -58,7 +57,7 @@ st.markdown("""
 st.markdown("""
     <div class="header">
         <h1>📊 AI Research Scientist Evaluation</h1>
-        <p>Analyze up to 10 datasets with advanced metrics and a sleek, interactive interface.</p>
+        <p>Analyze datasets with advanced metrics and a sleek, interactive interface.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -75,7 +74,7 @@ uploaded_files = st.sidebar.file_uploader(
 def evaluate_metrics(y_true, y_pred):
     # Confusion Matrix
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-    
+
     # Calculate metrics
     sensitivitas = tp / (tp + fn) if (tp + fn) != 0 else 0
     spesifisitas = tn / (tn + fp) if (tn + fp) != 0 else 0
@@ -85,11 +84,11 @@ def evaluate_metrics(y_true, y_pred):
     rasio_kemungkinan_positif = sensitivitas / (1 - spesifisitas) if (1 - spesifisitas) != 0 else np.inf
     rasio_kemungkinan_negatif = (1 - sensitivitas) / spesifisitas if spesifisitas != 0 else np.inf
     akurasi = (tp + tn) / len(y_true) if len(y_true) > 0 else 0
-    
+
     # ROC and AUC
     fpr, tpr, _ = roc_curve(y_true, y_pred)
     auc_value = auc(fpr, tpr)
-    
+
     return {
         "Sensitivitas (Recall)": sensitivitas,
         "Spesifisitas": spesifisitas,
@@ -189,5 +188,12 @@ if uploaded_files:
                         plt.title("ROC Curve")
                         plt.legend()
                         st.pyplot(fig)
+
+                        # Watermark
+                        st.markdown("""
+                            <p style="text-align:center; font-size:14px; color:gray;">
+                                Created by Allam Rafi FKUI 2022
+                            </p>
+                        """, unsafe_allow_html=True)
 else:
     st.markdown("### Please upload datasets to get started!")
